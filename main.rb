@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 require "image_processing/vips"
 require "rqrcode"
 require "csv"
@@ -19,22 +21,22 @@ CSV.foreach("users.csv", headers: true) do |row|
   )
   IO.write("qrcodes/#{row.fetch("name")}_#{row.fetch("uuid")}.png", png.to_s)
 
-  text = Vips::Image.text(row.fetch("name"), width: 500, dpi: 500, font: 'sans bold')
+  text = Vips::Image.text(row.fetch("name"), width: 500, dpi: 500, font: 'Novecento Sans Light')
   overlay = (text.new_from_image [255, 128, 128]).copy interpretation: :srgb
   overlay = overlay.bandjoin text
 
   ImageProcessing::Vips
     .source("qrcodes/#{row.fetch("name")}_#{row.fetch("uuid")}.png")
-    .composite("logo.png",  
-      gravity: "centre", 
+    .composite("logo.png",
+      gravity: "centre",
     )
     .call(destination: "qrcodes/logo_#{row.fetch("name")}_#{row.fetch("uuid")}.png")
 
   ImageProcessing::Vips
     .source("back.png")
-    .composite("qrcodes/logo_#{row.fetch("name")}_#{row.fetch("uuid")}.png",  
-      mode: "over",          
-      gravity: "north", 
+    .composite("qrcodes/logo_#{row.fetch("name")}_#{row.fetch("uuid")}.png",
+      mode: "over",
+      gravity: "north",
       offset: [0, 250],
     )
     .composite(overlay,
