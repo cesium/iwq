@@ -17,7 +17,7 @@ def gen_credential(base, uuid, name, food, housing)
   overlay = overlay.bandjoin text
 
   logo = ""
-  
+
   if base == "staff"
     logo = "logos/logo_full_all.png"
   elsif base == "attendee"
@@ -34,14 +34,14 @@ def gen_credential(base, uuid, name, food, housing)
 
   ImageProcessing::Vips
     .source("base_#{base}.png")
-    .composite(logo,  
-      mode: "over",          
-      gravity: "north-west", 
+    .composite(logo,
+      mode: "over",
+      gravity: "north-west",
       offset: [285, 240],
     )
-    .composite("qrcodes/logo_#{name}_#{uuid}.png",  
-      mode: "over",          
-      gravity: "north", 
+    .composite("qrcodes/logo_#{name}_#{uuid}.png",
+      mode: "over",
+      gravity: "north",
       offset: [0, 2200],
     )
     .composite(overlay,
@@ -71,8 +71,8 @@ def gen_qrcode(uuid, name)
 
   ImageProcessing::Vips
     .source("qrcodes/#{name}_#{uuid}.png")
-    .composite("logo.png",  
-      gravity: "centre", 
+    .composite("logo.png",
+      gravity: "centre",
     )
     .call(destination: "qrcodes/logo_#{name}_#{uuid}.png")
 end
