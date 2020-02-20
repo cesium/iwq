@@ -25,7 +25,7 @@ def gen_credential(base, uuid, name, food, housing)
       logo = "logos/logo_full_dona.png"
     elsif housing == "Alojamento Alberto Sampaio"
       logo = "logos/logo_full_esas.png"
-    elsif food
+    elsif food == "true"
       logo = "logos/logo_food.png"
     else
       logo = "logos/logo_nothing.png"
@@ -84,7 +84,7 @@ CSV.foreach(ARGV[0], headers: true) do |row|
   food = row.fetch("food")
   housing = row.fetch("housing")
 
-  if volunteer
+  if volunteer == "true"
     gen_qrcode("staff", uuid, name)
     gen_credential("staff", uuid, name, food, housing)
   else
