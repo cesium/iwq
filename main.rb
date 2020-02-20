@@ -53,7 +53,7 @@ def gen_credential(base, uuid, name, food, housing)
     .call(destination: "final/final_#{name}_#{uuid}.png")
 end
 
-def gen_qrcode(uuid, name)
+def gen_qrcode(base, uuid, name)
   qrcode = RQRCode::QRCode.new("#{FRONTEND_URL}#{uuid}")
   png = qrcode.as_png(
     bit_depth: 1,
@@ -71,7 +71,7 @@ def gen_qrcode(uuid, name)
 
   ImageProcessing::Vips
     .source("qrcodes/#{name}_#{uuid}.png")
-    .composite("logo.png",
+    .composite("logo_#{base}.png",
       gravity: "centre",
     )
     .call(destination: "qrcodes/logo_#{name}_#{uuid}.png")
@@ -84,11 +84,11 @@ CSV.foreach(ARGV[0], headers: true) do |row|
   food = row.fetch("food")
   housing = row.fetch("housing")
 
-  gen_qrcode(uuid, name)
-
   if volunteer
+    gen_qrcode("staff", uuid, name)
     gen_credential("staff", uuid, name, food, housing)
   else
+    gen_qrcode("attendee", uuid, name)
     gen_credential("attendee", uuid, name, food, housing)
   end
 end
