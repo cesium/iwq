@@ -1,46 +1,94 @@
 require "image_processing/vips"
 require "rqrcode"
 require "csv"
-require 'tempfile'
+require "tempfile"
 
-CSV.foreach("users.csv", headers: true) do |row|
-  qrcode = RQRCode::QRCode.new(row.fetch("uuid"))
+FRONTEND_URL = "https://enei.pt/user/"
+
+def gen_credential(base, uuid, name, food, housing)
+  text = Vips::Image.text(
+    name,
+    width: 3900,
+    align: :centre,
+    dpi: 2400,
+    font: "Novecento sans Bold"
+  )
+  overlay = (text.new_from_image [255, 255, 255]).copy interpretation: :srgb
+  overlay = overlay.bandjoin text
+
+  logo = ""
+  
+  if base == "staff"
+    logo = "logos/logo_full_all.png"
+  elsif base == "attendee"
+    if housing == "Alojamento D. Maria II"
+      logo = "logos/logo_full_dona.png"
+    elsif housing == "Alojamento Alberto Sampaio"
+      logo = "logos/logo_full_esas.png"
+    elsif food
+      logo = "logos/logo_food.png"
+    else
+      logo = "logos/logo_nothing.png"
+    end
+  end
+
+  ImageProcessing::Vips
+    .source("base_#{base}.png")
+    .composite(logo,  
+      mode: "over",          
+      gravity: "north-west", 
+      offset: [285, 240],
+    )
+    .composite("qrcodes/logo_#{name}_#{uuid}.png",  
+      mode: "over",          
+      gravity: "north", 
+      offset: [0, 2200],
+    )
+    .composite(overlay,
+      mode: "over",
+      gravity: "north",
+      offset: [0, 4710],
+    )
+    .colourspace(:cmyk)
+    .call(destination: "final/final_#{name}_#{uuid}.png")
+end
+
+def gen_qrcode(uuid, name)
+  qrcode = RQRCode::QRCode.new("#{FRONTEND_URL}#{uuid}")
   png = qrcode.as_png(
     bit_depth: 1,
     border_modules: 4,
     color_mode: ChunkyPNG::COLOR_GRAYSCALE,
-    color: 'white',
+    color: "white",
     file: nil,
     fill: ChunkyPNG::Color.rgba(0, 0, 0, 0),
     module_px_size: 6,
     resize_exactly_to: false,
     resize_gte_to: false,
-    size: 340
+    size: 2500
   )
-  IO.write("qrcodes/#{row.fetch("name")}_#{row.fetch("uuid")}.png", png.to_s)
-
-  text = Vips::Image.text(row.fetch("name"), width: 500, dpi: 500, font: 'sans bold')
-  overlay = (text.new_from_image [255, 128, 128]).copy interpretation: :srgb
-  overlay = overlay.bandjoin text
+  IO.write("qrcodes/#{name}_#{uuid}.png", png.to_s)
 
   ImageProcessing::Vips
-    .source("qrcodes/#{row.fetch("name")}_#{row.fetch("uuid")}.png")
+    .source("qrcodes/#{name}_#{uuid}.png")
     .composite("logo.png",  
       gravity: "centre", 
     )
-    .call(destination: "qrcodes/logo_#{row.fetch("name")}_#{row.fetch("uuid")}.png")
+    .call(destination: "qrcodes/logo_#{name}_#{uuid}.png")
+end
 
-  ImageProcessing::Vips
-    .source("back.png")
-    .composite("qrcodes/logo_#{row.fetch("name")}_#{row.fetch("uuid")}.png",  
-      mode: "over",          
-      gravity: "north", 
-      offset: [0, 250],
-    )
-    .composite(overlay,
-      mode: "over",
-      gravity: "north",
-      offset: [0, 170],
-    )
-    .call(destination: "final/final_#{row.fetch("name")}_#{row.fetch("uuid")}.png")
+CSV.foreach(ARGV[0], headers: true) do |row|
+  uuid = row.fetch("uuid")
+  name = row.fetch("name").split(" ").values_at(0, -1).join(" ").upcase
+  volunteer = row.fetch("volunteer")
+  food = row.fetch("food")
+  housing = row.fetch("housing")
+
+  gen_qrcode(uuid, name)
+
+  if volunteer
+    gen_credential("staff", uuid, name, food, housing)
+  else
+    gen_credential("attendee", uuid, name, food, housing)
+  end
 end
