@@ -6,15 +6,19 @@ require "tempfile"
 FRONTEND_URL = "https://enei.pt/user/"
 
 def gen_credential(base, uuid, name, food, housing)
-  text = Vips::Image.text(
-    name,
-    width: 3900,
-    align: :centre,
-    dpi: 2400,
-    font: "Novecento sans Bold"
-  )
-  overlay = (text.new_from_image [255, 255, 255]).copy interpretation: :srgb
-  overlay = overlay.bandjoin text
+  if !name.empty?
+    text = Vips::Image.text(
+      name,
+      width: 3900,
+      align: :centre,
+      dpi: 2400,
+      font: "Novecento sans Bold"
+    )
+    overlay = (text.new_from_image [255, 255, 255]).copy interpretation: :srgb
+    overlay = overlay.bandjoin text
+  else
+    overlay = "empty.png"
+  end
 
   logo = ""
 
@@ -77,9 +81,9 @@ def gen_qrcode(base, uuid, name)
     .call(destination: "qrcodes/logo_#{name}_#{uuid}.png")
 end
 
-CSV.foreach(ARGV[0], headers: true) do |row|
+CSV.foreach(ARGV[0], headers: true, nil_value: "") do |row|
   uuid = row.fetch("uuid")
-  name = row.fetch("name").split(" ").values_at(0, -1).join(" ").upcase
+  name = row.fetch("name").split(" ").values_at(0, -1).join(" ").upcase.strip
   volunteer = row.fetch("volunteer")
   food = row.fetch("food")
   housing = row.fetch("housing")
