@@ -53,7 +53,6 @@ def gen_credential(base, uuid, name, food, housing)
       gravity: "north",
       offset: [0, 4710],
     )
-    .colourspace(:cmyk)
     .call(destination: "final/final_#{name}_#{uuid}.png")
 end
 
